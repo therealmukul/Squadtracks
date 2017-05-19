@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <!--Import Google Icon Font-->
+      <link href="http://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+      <!--Import materialize.css-->
+      <link type="text/css" rel="stylesheet" href="css/materialize.min.css"  media="screen,projection"/>
+
+      <!--Let browser know website is optimized for mobile-->
+      <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+      <!--Import jQuery before materialize.js-->
+      <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+      <script type="text/javascript" src="js/materialize.min.js"></script>
+      <link rel="stylesheet" href="css/style.css">
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/emojione/2.2.6/assets/css/emojione.min.css"/>
+
+   </head>
+   <title>UpNext</title>
+
+   <body>
+      <header>
+         <nav>
+            <div class="nav-wrapper">
+               <a href="/" class="brand-logo left">UpNext</a>
+            </div>
+         </nav>
+      </header>
+
+      <main id="app">
+         <div class="row">
+            <div class=" col s12">
+               <div class="card horizontal">
+                  <div id="chat-messages" class="card-content" v-html="chatContent">
+                  </div>
+               </div>
+            </div>
+         </div>
+
+         <div class="row" v-if="joined">
+            <div class="input-field col s8">
+               <input type="text" v-model="newMsg" @keyup.enter="send" />
+            </div>
+            <div class="input-field col s4">
+               <button class="waves-effect waves-light btn" @click="send">
+                  <i class="material-icons right">chat</i>
+                  Send
+               </button>
+            </div>
+         </div>
+
+         <div class="row" v-if="!joined">
+            <div class="input-field col s8">
+               <input type="email" v-model.trim="email" placeholder="Email" />
+            </div>
+            <div class="input-field col s8">
+               <input type="text" v-model.trimp="username" placeholder="Username" />
+            </div>
+            <div class="input-field col s4">
+               <button class="waves-effect waves-light btn" @click="join()">
+                  <i class="material-icons right">done</i>
+                  Join
+               </button>
+            </div>
+         </div>
+
+      </main>
+
+      <footer class="page-footer">
+      </footer>
+
+      <script src="https://unpkg.com/vue@2.1.3/dist/vue.min.js"></script>
+      <script src="https://cdn.jsdelivr.net/emojione/2.2.6/lib/js/emojione.min.js"></script>
+      <script src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/md5.js"></script>
+      <script src="/app.js"></script>
+   </body>
+</html>
