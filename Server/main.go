@@ -6,14 +6,21 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var clients = make(map[*websocket.Conn] bool)	// connected clients
+var clients = make(map[string][]*websocket.Conn)	// {<roomID> : [clients]}
+
+// var clients = make(map[*websocket.Conn] bool)	// connected clients
 var broadcast = make(chan Message)					// broadcast channel
 var upgrader = websocket.Upgrader{}					// upgrades HTTP reqs to websocket connections
 
 type Message struct {
-	Email			string `json:"email"`
+	RoomID		string `json:"roomID"`
 	Username		string `json:"username"`
 	Message		string `json:"message"`
+}
+
+type Client struct {
+	RoomID string
+	Connection *websocket.Conn
 }
 
 func handleConnections(w http.ResponseWriter, r *http.Request) {
@@ -23,20 +30,28 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 		log.Fatal("Upgrade", err)
 	}
 
-	// Close the websocket connection when the function returns
-	defer ws.Close()
+	// Create the client object
+	var client Client
+	errClient := ws.ReadJSON(&client)
+	if errClient != nil {
+		log.Printf("ERROR: %v", errClient)
+	}
 
 	// Register the client by adding to the clients map
-	clients[ws] = true
+	clients[client.RoomID] = append(clients[client.RoomID], ws)
+	log.Println(clients)
+
+
+	// Close the websocket connection when the function returns
+	defer ws.Close()
 
 	// Infinite loop to wait for messages from the client
 	for {
 		var msg Message
 		// Serialize message from JSON to the Message object
-		err := ws.ReadJSON(&msg)
-		if err != nil {
-			log.Printf("ERROR: %v", err)
-			delete(clients, ws)
+		errMsg := ws.ReadJSON(&msg)
+		if errMsg != nil {
+			log.Printf("ERROR: %v", errMsg)
 			break
 		}
 		// Send the newly recieved message to the broadcast channel
@@ -49,14 +64,20 @@ func handleMessages() {
 		// Get the next message in the broadcast channel
 		msg := <-broadcast
 		// Send the message out to every connected client
-		for client := range clients {
+		for _, client := range clients[msg.RoomID] {
 			err := client.WriteJSON(msg)
 			if err != nil {
 				log.Printf("ERROR: %v", err)
-				client.Close()
-				delete(clients, client)
 			}
 		}
+		// for client := range clients {
+		// 	err := client.WriteJSON(msg)
+		// 	if err != nil {
+		// 		log.Printf("ERROR: %v", err)
+		// 		client.Close()
+		// 		delete(clients, client)
+		// 	}
+		// }
 	}
 }
 
