@@ -9,13 +9,15 @@ import (
 var clients = make(map[string][]*websocket.Conn)	// {<roomID> : [clients]}
 
 // var clients = make(map[*websocket.Conn] bool)	// connected clients
-var broadcast = make(chan Message)					// broadcast channel
+var broadcast = make(chan Action)					// broadcast channel
 var upgrader = websocket.Upgrader{}					// upgrades HTTP reqs to websocket connections
 
-type Message struct {
+type Action struct {
 	RoomID		string `json:"roomID"`
-	Username		string `json:"username"`
-	Message		string `json:"message"`
+	VideoID		string `json:"videoID"`
+	User			string `json:"user"`
+	Action		string `json:"action"`
+
 }
 
 type Client struct {
@@ -35,25 +37,26 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 	errClient := ws.ReadJSON(&client)
 	if errClient != nil {
 		log.Printf("ERROR: %v", errClient)
+
+	} else {
+		// Register the client by adding to the clients map
+		clients[client.RoomID] = append(clients[client.RoomID], ws)
+		log.Println(clients)
 	}
-
-	// Register the client by adding to the clients map
-	clients[client.RoomID] = append(clients[client.RoomID], ws)
-	log.Println(clients)
-
 
 	// Close the websocket connection when the function returns
 	defer ws.Close()
 
 	// Infinite loop to wait for messages from the client
 	for {
-		var msg Message
-		// Serialize message from JSON to the Message object
+		var msg Action
+		// Serialize message from JSON to the Song object
 		errMsg := ws.ReadJSON(&msg)
 		if errMsg != nil {
 			log.Printf("ERROR: %v", errMsg)
 			break
 		}
+		log.Println(msg)
 		// Send the newly recieved message to the broadcast channel
 		broadcast <- msg
 	}

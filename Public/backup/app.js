@@ -4,18 +4,29 @@ new Vue({
       ws: null,
       newMsg: "",
       chatContent: "",
-      email: null,
+      roomID: null,
       username: null,
-      joined: false
+      joined: false,
+      newTodoText: '',
+      songQueue: [
+         {songTitle: 'Paris', addedBy: 'Mukul'},
+         {songTitle: 'Closer', addedBy: 'Rabi'},
+         {songTitle: 'New York City', addedBy: 'Yousuf'}
+      ]
    },
 
    created: function() {
       var self = this;
+      var tag = document.createElement('script');
+
+      tag.src = "https://www.youtube.com/iframe_api";
+      var firstScriptTag = document.getElementsByTagName('script')[0];
+      firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
       this.ws = new WebSocket("ws://" + window.location.host + "/ws");
       this.ws.addEventListener("message", function(e) {
          var msg = JSON.parse(e.data);
          self.chatContent += '<div class="chip"'
-            + '<img src=""' + self.gravatarURL(msg.email) + '">"'
+            + '<img src=""' + self.gravatarURL("fd") + '">"'
             + msg.username
             + '</div>'
             + emojione.toImage(msg.message) + '<br/>';
@@ -29,7 +40,7 @@ new Vue({
       send: function() {
          this.ws.send(
             JSON.stringify({
-               email: this.email,
+               roomID: this.roomID,
                username: this.username,
                message: $('<p>').html(this.newMsg).text()
             }
@@ -38,22 +49,29 @@ new Vue({
       },
 
       join: function() {
-         if (!this.email) {
-            Materialize.toast("You must enter an email", 2000);
+         if (!this.roomID) {
+            Materialize.toast("You must enter a roomID", 2000);
             return;
          }
          if (!this.username) {
             Materialize.toast("You must choose a username", 2000);
             return;
          }
-         this.email = $('<p>').html(this.email).text();
+         this.roomID = $('<p>').html(this.roomID).text();
          this.username = $('<p>').html(this.username).text();
          this.joined = true;
+         console.log("sent info");
+         this.ws.send(
+            JSON.stringify({
+               roomID: this.roomID,
+               connection: this.ws
+            }
+         ));
       },
 
       gravatarURL: function(email) {
          return 'http://www.gravatar.com/avatar/' + CryptoJS.MD5(email);
-      }
+      },
    }
 
 });
