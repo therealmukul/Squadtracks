@@ -3,37 +3,13 @@ package main
 import (
 	"log"
 	"net/http"
+
 	"github.com/gorilla/websocket"
 )
 
-var clients = make(map[string][]*websocket.Conn)	// {<roomID> : [clients]}
-var broadcast = make(chan Action)					// broadcast channel
-var upgrader = websocket.Upgrader{}					// upgrades HTTP reqs to websocket connections
-
-type Action struct {
-	RoomID		string `json:"roomID"`
-	VideoID		string `json:"videoID"`
-	User			string `json:"user"`
-	Action		string `json:"action"`
-	Data			[]string `json:"data"`
-	SngQueue 		SongQueue `json:"songQueue"`
-}
-
-type SongQueue struct {
-	CurrentSongQueueIndex	int `json:"currentSongQueueIndex"`
-	CurrentSongID 				string `json:"currentSongID"`
-	Queue							[]QueueItem `json:"queue"`
-}
-
-type QueueItem struct {
-	User	string	`json:"user"`
-	VideoID	string	`json:"videoID"`
-}
-
-type Client struct {
-	RoomID string
-	Connection *websocket.Conn
-}
+var clients = make(map[string][]*websocket.Conn) // {<roomID> : [clients]}
+var broadcast = make(chan Action)                // broadcast channel
+var upgrader = websocket.Upgrader{}              // upgrades HTTP reqs to websocket connections
 
 func handleConnections(w http.ResponseWriter, r *http.Request) {
 	// Upgrade the initial GET request to a websocket
@@ -93,7 +69,6 @@ func handleMessages() {
 		// }
 	}
 }
-
 
 func main() {
 
