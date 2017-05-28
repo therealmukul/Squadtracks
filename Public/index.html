@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html ng-app="UpNext">
+   <head>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
+      <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.0-rc.0/angular.min.js"></script>
+      <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.5/angular-route.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-router/0.2.15/angular-ui-router.min.js"></script>
+      <script src="app/app.js"></script>
+      <script src="https://www.youtube.com/iframe_api"></script>
+      <script src="node_modules/angular-youtube-embed/dist/angular-youtube-embed.min.js"></script>
+
+      <!--Import Google Icon Font-->
+      <link href="http://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+      <!--Import materialize.css-->
+      <link type="text/css" rel="stylesheet" href="css/materialize.min.css"  media="screen,projection"/>
+
+      <!--Let browser know website is optimized for mobile-->
+      <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+      <!--Import jQuery before materialize.js-->
+      <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+      <script type="text/javascript" src="js/materialize.min.js"></script>
+      <link rel="stylesheet" href="css/style.css">
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/emojione/2.2.6/assets/css/emojione.min.css"/>
+
+   </head>
+   <title>UpNext</title>
+
+   <body ng-controller="MainCtl">
+      <main>
+         <header>
+            <!-- Navbar -->
+            <nav>
+               <div class="nav-wrapper grey lighten-5">
+                  <div class="container">
+                     <a href="/" class="brand-logo red-text">UpNext</a>
+                     <ul id="nav-mobile" class="right hide-on-med-and-down">
+                        <li ng-if="joined">
+                           <div class="center row">
+                              <div class="col s12">
+                                 <div class="row" id="topbarsearch">
+                                    <div class="input-field col s6 s12 red-text">
+                                       <i class="red-text material-icons prefix">search</i>
+                                       <input type="text" class="autocomplete red-text" placeholder="search" id="autocomplete-input"/>
+                                    </div>
+                                 </div>
+                              </div>
+                           </div>
+                        </li>
+                        <li><a href="#" class="red-text">About</a></li>
+                        <li><a href="#" class="red-text" ng-if="joined">Create Invite</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </nav>
+         </header>
+
+
+
+         <div class="container mainContent">
+            <div ng-if="joined">
+               <!-- Song Queue -->
+               <div ng-repeat="song in songQueue.queue">
+                  <div class="row">
+                     <div class="col s12">
+                        <div class="card">
+                           <div class="card-image">
+                              <button class="btn-floating halfway-fab waves-effect waves-light red">M</button>
+                           </div>
+                           <div class="card-content">
+                              <p>{{song.videoID}}</p>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+
+
+               <!-- <table class="highlight">
+                  <thead>
+                     <tr>
+                        <th data-field="Song Title">Song Title</th>
+                        <th data-field="Added By">Added by</th>
+                     </tr>
+                  </thead>
+
+                  <tbody>
+                     <tr ng-repeat="song in songQueue.queue">
+                        <td>{{ song.videoID }}</td>
+                        <td>{{ song.user }}</td>
+                     </tr>
+                  </tbody>
+               </table> -->
+
+               <div class="row">
+                  <div class="col s12">
+                     <div class="input-field">
+                        <input type="text", ng-model="songUrl" ng-keypress="addSongToQueue($event)" placeholder="youtube video url" />
+                     </div>
+                  </div>
+               </div>
+
+               <!-- Player Controls -->
+               <!-- <div class="row">
+                  <div class="col s12">
+                     <button class="waves-effect waves-light btn" ng-click="pause()">Pause</button>
+                     <button class="waves-effect waves-light btn" ng-click="play()">Play</button>
+                     <button class="waves-effect waves-light btn" ng-click="next()">Next</button>
+                  </div>
+               </div> -->
+            </div>
+         </div>
+
+
+         <div class="container">
+            <!-- Login -->
+            <div class="row" ng-show="joined == false">
+               <div class="col s4"></div>
+               <div class="col s4">
+                  <div class="input-field">
+                     <input type="text" ng-model="roomID" placeholder="Room ID" />
+                  </div>
+                  <div class="input-field">
+                     <input type="text" ng-model="username" placeholder="Username" />
+                  </div>
+                  <div class="input-field">
+                     <button class="waves-effect waves-light btn" ng-click="join()">Join</button>
+                  </div>
+               </div>
+               <div class="col s4"></div>
+            </div>
+         </div>
+
+      </main>
+
+      <footer class="page-footer grey lighten-4" ng-if="joined">
+         <!-- <div class="container"> -->
+            <div class="row bottom">
+               <div class="col s12">
+                  <button class="ctl btn-floating waves-effect waves-light red" ng-click="pause()"><i class="material-icons">pause</i></button>
+                  <button class="ctl btn-floating btn-large waves-effect waves-light red" ng-click="play()"><i class="material-icons">play_arrow</i></button>
+                  <button class="ctl btn-floating waves-effect waves-light red" ng-click="next()"><i class="material-icons">skip_next</i></button>
+                  <youtube-video class="embed-responsive-item" id='player' align="right" player-width="'100px'" player-height="'56'" video-id="songQueue.currentSongID" player="player" player-vars="playerVars"></youtube-video>
+               </div>
+            <!-- </div> -->
+         </div>
+      </footer>
+
+
+
+
+
+   </body>
+</html>
