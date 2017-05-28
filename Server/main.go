@@ -7,8 +7,6 @@ import (
 )
 
 var clients = make(map[string][]*websocket.Conn)	// {<roomID> : [clients]}
-
-// var clients = make(map[*websocket.Conn] bool)	// connected clients
 var broadcast = make(chan Action)					// broadcast channel
 var upgrader = websocket.Upgrader{}					// upgrades HTTP reqs to websocket connections
 
@@ -17,7 +15,19 @@ type Action struct {
 	VideoID		string `json:"videoID"`
 	User			string `json:"user"`
 	Action		string `json:"action"`
+	Data			[]string `json:"data"`
+	SngQueue 		SongQueue `json:"songQueue"`
+}
 
+type SongQueue struct {
+	CurrentSongQueueIndex	int `json:"currentSongQueueIndex"`
+	CurrentSongID 				string `json:"currentSongID"`
+	Queue							[]QueueItem `json:"queue"`
+}
+
+type QueueItem struct {
+	User	string	`json:"user"`
+	VideoID	string	`json:"videoID"`
 }
 
 type Client struct {

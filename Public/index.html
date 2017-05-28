@@ -24,7 +24,7 @@
       <link rel="stylesheet" href="https://cdn.jsdelivr.net/emojione/2.2.6/assets/css/emojione.min.css"/>
 
    </head>
-   <title>UpNext</title>
+   <title>NextUp</title>
 
    <body ng-controller="MainCtl">
       <main>
@@ -33,7 +33,7 @@
             <nav>
                <div class="nav-wrapper grey lighten-5">
                   <div class="container">
-                     <a href="/" class="brand-logo red-text">UpNext</a>
+                     <a href="/" class="brand-logo red-text">NextUp</a>
                      <ul id="nav-mobile" class="right hide-on-med-and-down">
                         <li ng-if="joined">
                            <div class="center row">
@@ -53,30 +53,26 @@
                   </div>
                </div>
             </nav>
+
+            <!-- Room Users -->
+            <div class="activeUsers grey lighten-3" ng-if="joined">
+               <div class="usersRow">
+                  <div class="col s12">
+                     <div class="chip" ng-repeat="user in roomMembers">
+                        {{ user }}
+                     </div>
+                  </div>
+               </div>
+            </div>
+
          </header>
 
 
 
-         <div class="container mainContent">
+         <div class="container mainContent" id="songQueue">
             <div ng-if="joined">
                <!-- Song Queue -->
-               <div ng-repeat="song in songQueue.queue">
-                  <div class="row">
-                     <div class="col s12">
-                        <div class="card">
-                           <div class="card-image">
-                              <button class="btn-floating halfway-fab waves-effect waves-light red">M</button>
-                           </div>
-                           <div class="card-content">
-                              <p>{{song.videoID}}</p>
-                           </div>
-                        </div>
-                     </div>
-                  </div>
-               </div>
-
-
-               <!-- <table class="highlight">
+               <table class="highlight">
                   <thead>
                      <tr>
                         <th data-field="Song Title">Song Title</th>
@@ -90,7 +86,7 @@
                         <td>{{ song.user }}</td>
                      </tr>
                   </tbody>
-               </table> -->
+               </table>
 
                <div class="row">
                   <div class="col s12">
@@ -100,14 +96,6 @@
                   </div>
                </div>
 
-               <!-- Player Controls -->
-               <!-- <div class="row">
-                  <div class="col s12">
-                     <button class="waves-effect waves-light btn" ng-click="pause()">Pause</button>
-                     <button class="waves-effect waves-light btn" ng-click="play()">Play</button>
-                     <button class="waves-effect waves-light btn" ng-click="next()">Next</button>
-                  </div>
-               </div> -->
             </div>
          </div>
 
@@ -142,7 +130,6 @@
                   <button class="ctl btn-floating waves-effect waves-light red" ng-click="next()"><i class="material-icons">skip_next</i></button>
                   <youtube-video class="embed-responsive-item" id='player' align="right" player-width="'100px'" player-height="'56'" video-id="songQueue.currentSongID" player="player" player-vars="playerVars"></youtube-video>
                </div>
-            <!-- </div> -->
          </div>
       </footer>
 
