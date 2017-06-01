@@ -2,7 +2,8 @@ var app = angular.module('UpNext', ['youtube-embed']).run(function($rootScope) {
    $rootScope.rootPlayer = null;
 });
 
-app.controller('MainCtl', ['$scope', function($scope, $rootScope) {
+app.controller('MainCtl', ['$scope', function($scope, $rootScope, $http) {
+   $scope.clientID = null;
    $scope.roomID = null;
    $scope.username = null;
    $scope.joined = false;

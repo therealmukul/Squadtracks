@@ -3,13 +3,22 @@ package main
 import (
 	"log"
 	"net/http"
-
+	"encoding/json"
 	"github.com/gorilla/websocket"
+	"github.com/gorilla/mux"
+	"github.com/nu7hatch/gouuid"
 )
 
+// var clients = make(map[string] Room)
 var clients = make(map[string][]*websocket.Conn) // {<roomID> : [clients]}
 var broadcast = make(chan Action)                // broadcast channel
 var upgrader = websocket.Upgrader{}              // upgrades HTTP reqs to websocket connections
+
+type Room struct {
+	RoomID					string
+	RoomName					string
+	ConnectedClients 		[]Client
+}
 
 func handleConnections(w http.ResponseWriter, r *http.Request) {
 	// Upgrade the initial GET request to a websocket
@@ -70,15 +79,44 @@ func handleMessages() {
 	}
 }
 
+func generateUuid(w http.ResponseWriter, r *http.Request) {
+	u, err := uuid.NewV4()
+	uid := u.String()
+	if err != nil {
+		log.Printf("ERROR: %v", err)
+		uuid := UUIDResponse{"ERROR", "ERROR"}
+		js, err := json.Marshal(uuid)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+    		return
+		}
+		w.Header().Set("Content-Type", "application/json")
+  		w.Write(js)
+	} else {
+		log.Printf(uid)
+		uuid := UUIDResponse{"OK", uid}
+		js, err := json.Marshal(uuid)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+    		return
+		}
+		w.Header().Set("Content-Type", "application/json")
+  		w.Write(js)
+	}
+}
+
 func main() {
 
 	// Create a file server
 	fs := http.FileServer(http.Dir("../Public"))
 
-	// Routes
-	http.Handle("/", fs)
-	// Create websocket route
-	http.HandleFunc("/ws", handleConnections)
+	// Create Gorilla Mux Router
+	r := mux.NewRouter()
+	
+	r.HandleFunc("/ws", handleConnections)
+	r.HandleFunc("/api/genuuid", generateUuid)
+	r.PathPrefix("/").Handler(fs)
+	http.Handle("/", r)
 
 	// Start listening for incoming chat messages
 	go handleMessages()
