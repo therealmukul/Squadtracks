@@ -5,6 +5,7 @@
       <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.0-rc.0/angular.min.js"></script>
       <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.5/angular-route.min.js"></script>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-router/0.2.15/angular-ui-router.min.js"></script>
+      <script src="main.js"></script>
       <script src="app/app.js"></script>
       <script src="https://www.youtube.com/iframe_api"></script>
       <script src="node_modules/angular-youtube-embed/dist/angular-youtube-embed.min.js"></script>
@@ -48,11 +49,22 @@
                            </div>
                         </li>
                         <li><a href="#" class="red-text">About</a></li>
-                        <li><a href="#" class="red-text" ng-if="joined">Create Invite</a></li>
+                        <li><a href="#" class="red-text" ng-if="joined" ng-click="openModal()">Create Invite</a></li>
                      </ul>
                   </div>
                </div>
             </nav>
+
+            <!-- Invite Users Modal -->
+            <div class="modal" id="modal1">
+               <div class="modal-content">
+                  <h3>Invite your friends</h3>
+                  <h6>{{ roomID }}</h6>
+                  <div class="modal-footer">
+                     <a href="#!" class="modal-action modal-close waves-effect waves-green btn-flat">Close</a>
+                  </div>
+               </div>
+            </div>
 
             <!-- Room Users -->
             <div class="activeUsers grey lighten-3" ng-if="joined">
@@ -106,13 +118,13 @@
                <div class="col s4"></div>
                <div class="col s4">
                   <div class="input-field">
-                     <input type="text" ng-model="roomID" placeholder="Room ID" />
+                     <input type="text" ng-model="roomName" placeholder="Room Name" />
                   </div>
                   <div class="input-field">
                      <input type="text" ng-model="username" placeholder="Username" />
                   </div>
                   <div class="input-field">
-                     <button class="waves-effect waves-light btn" ng-click="join()">Join</button>
+                     <button class="waves-effect waves-light btn" ng-click="createRoom()">Create</button>
                   </div>
                </div>
                <div class="col s4"></div>

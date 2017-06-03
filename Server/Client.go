@@ -3,7 +3,8 @@ package main
 import "github.com/gorilla/websocket"
 
 type Client struct {
-	ClientID		string
-	RoomID     	string
-	Connection 	*websocket.Conn
+   RoomID     	string `json:"roomID"`
+	ClientID		string `json:"clientID"`
+   RoomName    string `json:"roomName"`
+	Connection 	*websocket.Conn `json:"connection"`
 }

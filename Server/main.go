@@ -9,15 +9,14 @@ import (
 	"github.com/nu7hatch/gouuid"
 )
 
-// var clients = make(map[string] Room)
-var clients = make(map[string][]*websocket.Conn) // {<roomID> : [clients]}
+var clients = make(map[string]*Room)
 var broadcast = make(chan Action)                // broadcast channel
 var upgrader = websocket.Upgrader{}              // upgrades HTTP reqs to websocket connections
 
 type Room struct {
 	RoomID					string
 	RoomName					string
-	ConnectedClients 		[]Client
+	ConnectedClients 		map[string]*websocket.Conn
 }
 
 func handleConnections(w http.ResponseWriter, r *http.Request) {
@@ -35,8 +34,14 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 
 	} else {
 		// Register the client by adding to the clients map
-		clients[client.RoomID] = append(clients[client.RoomID], ws)
-		log.Println(clients)
+		room := new(Room)
+		room.RoomID = client.RoomID
+		room.RoomName = client.RoomName
+		room.ConnectedClients = make(map[string]*websocket.Conn)
+		room.ConnectedClients[client.ClientID] = ws
+
+		clients[room.RoomID] = room
+
 	}
 
 	// Close the websocket connection when the function returns
@@ -62,46 +67,46 @@ func handleMessages() {
 		// Get the next message in the broadcast channel
 		msg := <-broadcast
 		// Send the message out to every connected client
-		for _, client := range clients[msg.RoomID] {
+		for clientID, client := range clients[msg.RoomID].ConnectedClients {
 			err := client.WriteJSON(msg)
 			if err != nil {
 				log.Printf("ERROR: %v", err)
+				client.Close()
+				delete(clients[msg.RoomID].ConnectedClients, clientID)
 			}
 		}
-		// for client := range clients {
-		// 	err := client.WriteJSON(msg)
-		// 	if err != nil {
-		// 		log.Printf("ERROR: %v", err)
-		// 		client.Close()
-		// 		delete(clients, client)
-		// 	}
-		// }
 	}
 }
 
 func generateUuid(w http.ResponseWriter, r *http.Request) {
-	u, err := uuid.NewV4()
-	uid := u.String()
-	if err != nil {
-		log.Printf("ERROR: %v", err)
-		uuid := UUIDResponse{"ERROR", "ERROR"}
-		js, err := json.Marshal(uuid)
+	rID, errR := uuid.NewV4()
+	cID, errC := uuid.NewV4()
+
+	roomUID := rID.String()
+	clientUID := cID.String()
+
+	if errR != nil && errC != nil {
+		log.Printf("ERROR: %v", errR)
+		log.Printf("ERROR: %v", errC)
+
+		errRes := UUIDResponse{"ERROR", "ERROR", "ERROR"}
+		js, err := json.Marshal(errRes)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-    		return
+		   return
 		}
 		w.Header().Set("Content-Type", "application/json")
-  		w.Write(js)
+	 	w.Write(js)
 	} else {
-		log.Printf(uid)
-		uuid := UUIDResponse{"OK", uid}
-		js, err := json.Marshal(uuid)
+		successRes := UUIDResponse{"OK", roomUID, clientUID}
+		log.Println(successRes)
+		js, err := json.Marshal(successRes)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-    		return
+		   return
 		}
 		w.Header().Set("Content-Type", "application/json")
-  		w.Write(js)
+	 	w.Write(js)
 	}
 }
 
@@ -112,7 +117,7 @@ func main() {
 
 	// Create Gorilla Mux Router
 	r := mux.NewRouter()
-	
+
 	r.HandleFunc("/ws", handleConnections)
 	r.HandleFunc("/api/genuuid", generateUuid)
 	r.PathPrefix("/").Handler(fs)
