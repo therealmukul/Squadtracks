@@ -1,5 +1,4 @@
 var app = angular.module('UpNext', ['youtube-embed', 'ui.router']).run(function($rootScope, $state) {
-   $rootScope.rootPlayer = null;
 
 });
 
@@ -12,6 +11,8 @@ app.controller('MainCtl', ['$scope', '$http', '$state', function($scope, $http, 
    $scope.joined = false;
    $scope.songUrl = null;
    $scope.roomMembers = [];
+   $scope.searchQuery = null;
+   $scope.searchQueryResults = null;
 
 
    // Player Attributes
@@ -30,6 +31,12 @@ app.controller('MainCtl', ['$scope', '$http', '$state', function($scope, $http, 
       currentSongID: null,
       queue: []
    };
+
+   $scope.config = {
+      headers : {
+         'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8;'
+      }
+   }
 
    // Establish a websocket connection
    var conn = new WebSocket("ws://" + window.location.host + "/ws");
@@ -54,11 +61,11 @@ app.controller('MainCtl', ['$scope', '$http', '$state', function($scope, $http, 
       $scope.$apply(function() {
          // grab the message info
          var actionInfo = JSON.parse(e.data);
-
+         console.log(actionInfo);
          // TODO: This code is sort of repetive. It can be further simplified.
          // Add Song
          if (actionInfo.action === 'addSong') {
-            var queueItem = {user: actionInfo.user, videoID: actionInfo.videoID}
+            var queueItem = {user: actionInfo.user, videoID: actionInfo.videoID, videoTitle: actionInfo.videoTitle};
             $scope.songQueue.queue.push(queueItem);
             if ($scope.username != actionInfo.user) {
                var msg = actionInfo.user + ' added a song';
@@ -105,8 +112,11 @@ app.controller('MainCtl', ['$scope', '$http', '$state', function($scope, $http, 
                Materialize.toast(msg, 2000, 'rounded');
 
                // Send room info (current users & song queue) to sync data
-               var actionInfo = {roomID: $scope.roomID, videoID: null, user: $scope.username, action: 'dataSync', data: $scope.roomMembers, songQueue: $scope.songQueue};
-               conn.send(JSON.stringify(actionInfo));
+
+               sendActionInfo($scope.roomID, null, null, $scope.username, "dataSync", $scope.roomMembers, $scope.songQueue);
+
+               // var actionInfo = {roomID: $scope.roomID, videoID: null, user: $scope.username, action: 'dataSync', data: $scope.roomMembers, songQueue: $scope.songQueue};
+               // conn.send(JSON.stringify(actionInfo));
 
                // var actionInfo = {roomID: $scope.roomID, videoID: null, user: $scope.username, action: 'dataSyncQ', data: $scope.songQueue.queue, songQueue: null};
                // conn.send(JSON.stringify(actionInfo));
@@ -131,7 +141,6 @@ app.controller('MainCtl', ['$scope', '$http', '$state', function($scope, $http, 
       });
    }
 
-
    $scope.openModal = function() {
       console.log("open modal");
       $('#modal1').modal('open');
@@ -139,11 +148,11 @@ app.controller('MainCtl', ['$scope', '$http', '$state', function($scope, $http, 
 
    $scope.createRoom = function() {
       if (!this.roomName) {
-         Materialize.toast("You must enter a roomID", 2000);
+         Materialize.toast("You must enter a Room Name", 2000);
          return;
       }
       if (!this.username) {
-         Materialize.toast("You must choose a username", 2000);
+         Materialize.toast("You must choose a Username", 2000);
          return;
       }
 
@@ -154,16 +163,51 @@ app.controller('MainCtl', ['$scope', '$http', '$state', function($scope, $http, 
          $scope.roomName = $('<p>').html($scope.roomName).text();
          $scope.username = $('<p>').html($scope.username).text();
          $scope.joined = true;
+         $scope.inviteLink = window.location.host + "/ws" + $scope.roomID
+         console.log($scope.inviteLink);
 
          var data = {roomID: $scope.roomID, clientID: $scope.clientID, roomName: $scope.roomName, connection: conn}
          console.log(data);
          conn.send(JSON.stringify(data));
 
-         var actionInfo = {roomID: $scope.roomID, videoID: null, user: $scope.username, action: 'joined', data: null, songQueue: null};
-         console.log(actionInfo);
-         conn.send(JSON.stringify(actionInfo));
+         sendActionInfo($scope.roomID, null, null, $scope.username, "joined", null, null);
+
+         // var actionInfo = {roomID: $scope.roomID, videoID: null, user: $scope.username, action: 'joined', data: null, songQueue: null};
+         // console.log(actionInfo);
+         // conn.send(JSON.stringify(actionInfo));
       });
 
+   }
+
+   $scope.joinRoom = function() {
+      if (!this.roomID) {
+         Materialize.toast("You must enter a Room ID", 2000);
+         return;
+      }
+      if (!this.username) {
+         Materialize.toast("You must choose a Username", 2000);
+         return;
+      }
+
+      var data = $.param({
+         roomID: $scope.roomID
+      });
+
+      $http.post("/api/join", data, this.config).then(function(res) {
+         $scope.clientID = res.data.clientUID;
+         $scope.roomName = res.data.roomName;
+         $scope.joined = true;
+
+         var data = {roomID: $scope.roomID, clientID: $scope.clientID, roomName: $scope.roomName, connection: conn}
+         console.log(data);
+         conn.send(JSON.stringify(data));
+
+         sendActionInfo($scope.roomID, null, null, $scope.username, "joined", null, null);
+
+         // var actionInfo = {roomID: $scope.roomID, videoID: null, user: $scope.username, action: 'joined', data: null, songQueue: null};
+         // console.log(actionInfo);
+         // conn.send(JSON.stringify(actionInfo));
+      });
    }
 
 
@@ -177,15 +221,29 @@ app.controller('MainCtl', ['$scope', '$http', '$state', function($scope, $http, 
                videoID = videoID.substring(0, ampersandPosition);
             }
 
-            // Contruct song info JSON entry
-            var actionInfo = {roomID: this.roomID, videoID: videoID, user: this.username, action: "addSong", data: null, songQueue: null};
-
-            // Send actionInfo the the server over the websocket connection
-            conn.send(JSON.stringify(actionInfo));
+            url = "https://www.googleapis.com/youtube/v3/videos?id="+videoID+"&key="+YTAPIKEY+"&part=snippet"
+            $http.get(url).then(function(res) {
+               var title = res.data.items[0].snippet.title;
+               console.log(title);
+               sendActionInfo($scope.roomID, videoID, title, $scope.username, "addSong", null, null);
+            });
 
             this.songUrl = '';
          }
       }
+   }
+
+   function sendActionInfo(_roomID, _videoID, _videoTitle, _username, _action, _data, _songQueue) {
+      var actionInfo = {
+         roomID: _roomID,
+         videoID: _videoID,
+         videoTitle: _videoTitle,
+         user: _username,
+         action: _action,
+         data: _data,
+         songQueue: _songQueue
+      }
+      conn.send(JSON.stringify(actionInfo));
    }
 
    $scope.pause = function() {
@@ -224,5 +282,27 @@ app.controller('MainCtl', ['$scope', '$http', '$state', function($scope, $http, 
       }
    }
 
+   $scope.search = function(keyEvent) {
+      if (keyEvent.which == 13) {
+         var query = encodeURIComponent(this.searchQuery);
+         console.log(query);
+
+         url = "https://www.googleapis.com/youtube/v3/search?part=snippet&q="+query+"&key="+YTAPIKEY;
+         $http.get(url).then(function(res) {
+            console.log(res.data);
+            $scope.searchQueryResults = res.data.items;
+            $('#modal2').modal('open');
+         });
+      }
+   }
+
+   $scope.addSearchedSong = function(songInfo) {
+      console.log(songInfo);
+      var videoID = songInfo.id.videoId;
+      var title = songInfo.snippet.title;
+      sendActionInfo(this.roomID, videoID, title, this.username, "addSong", null, null);
+      this.searchQuery = '';
+      $('#modal2').modal('close');
+   }
 
 }]);

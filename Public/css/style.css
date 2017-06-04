@@ -24,3 +24,20 @@ main {
    margin-bottom: 10px;
    margin-right: 10px;
 }
+
+.circleBig {
+   width: 60px !important;
+   height: 60px !important;
+}
+
+.songItem {
+   padding-left: 100px !important;
+}
+
+.songCard {
+   margin-bottom: 0px !important;
+}
+
+.songTitle {
+   margin-right: 20px;
+}

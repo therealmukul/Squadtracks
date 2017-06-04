@@ -42,7 +42,8 @@
                                  <div class="row" id="topbarsearch">
                                     <div class="input-field col s6 s12 red-text">
                                        <i class="red-text material-icons prefix">search</i>
-                                       <input type="text" class="autocomplete red-text" placeholder="search" id="autocomplete-input"/>
+                                       <input type="text" class="red-text" placeholder="search" ng-model="searchQuery" ng-keypress="search($event)"/>
+
                                     </div>
                                  </div>
                               </div>
@@ -60,6 +61,33 @@
                <div class="modal-content">
                   <h3>Invite your friends</h3>
                   <h6>{{ roomID }}</h6>
+                  <div class="modal-footer">
+                     <a href="#!" class="modal-action modal-close waves-effect waves-green btn-flat">Close</a>
+                  </div>
+               </div>
+            </div>
+
+            <!-- Search Results Modal -->
+            <div class="modal" id="modal2">
+               <div class="modal-content">
+                  <h3>Search Results</h3>
+                  <ul class="collection" ng-repeat="item in searchQueryResults">
+                     <li class="collection-item avatar songItem">
+                        <img class="circle circleBig" ng-src="{{ item.snippet.thumbnails.default.url }}" />
+                        <div class="row songCard">
+                           <div class="col s10">
+                              <p>
+                                 {{ item.snippet.title }}
+                              </p>
+                           </div>
+                           <div class="col s2">
+                              <a class="btn btn-floating btn-large grey darken-4" ng-click="addSearchedSong(item)" style="float: right;"><i class="material-icons">add</i></a>
+                           </div>
+                        </div>
+                        <!-- <span class="songTitle" class="flow-text">{{ item.snippet.title }}</span> -->
+
+                     </li>
+                  </ul>
                   <div class="modal-footer">
                      <a href="#!" class="modal-action modal-close waves-effect waves-green btn-flat">Close</a>
                   </div>
@@ -94,7 +122,7 @@
 
                   <tbody>
                      <tr ng-repeat="song in songQueue.queue">
-                        <td>{{ song.videoID }}</td>
+                        <td>{{ song.videoTitle }}</td>
                         <td>{{ song.user }}</td>
                      </tr>
                   </tbody>
@@ -117,18 +145,37 @@
             <div class="row" ng-show="joined == false">
                <div class="col s4"></div>
                <div class="col s4">
-                  <div class="input-field">
-                     <input type="text" ng-model="roomName" placeholder="Room Name" />
+                  <ul id="tabs-swipe-demo" class="tabs tabs-fixed-width">
+                     <li class="tab col s3"><a class="active" href="#createRoomTab">Create Room</a></li>
+                     <li class="tab col s3"><a href="#joinRoomTab">Join Room</a></li>
+                  </ul>
+                  <div id="createRoomTab">
+                     <div class="input-field">
+                        <input type="text" ng-model="roomName" placeholder="Room Name" />
+                     </div>
+                     <div class="input-field">
+                        <input type="text" ng-model="username" placeholder="Username" />
+                     </div>
+                     <div class="input-field">
+                        <button class="waves-effect waves-light btn" ng-click="createRoom()">Create</button>
+                     </div>
                   </div>
-                  <div class="input-field">
-                     <input type="text" ng-model="username" placeholder="Username" />
-                  </div>
-                  <div class="input-field">
-                     <button class="waves-effect waves-light btn" ng-click="createRoom()">Create</button>
+
+                  <div id="joinRoomTab">
+                     <div class="input-field">
+                        <input type="text" ng-model="roomID" placeholder="Room ID" />
+                     </div>
+                     <div class="input-field">
+                        <input type="text" ng-model="username" placeholder="Username" />
+                     </div>
+                     <div class="input-field">
+                        <button class="waves-effect waves-light btn" ng-click="joinRoom()">Join</button>
+                     </div>
                   </div>
                </div>
                <div class="col s4"></div>
             </div>
+
          </div>
 
       </main>
@@ -144,10 +191,6 @@
                </div>
          </div>
       </footer>
-
-
-
-
 
    </body>
 </html>
