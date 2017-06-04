@@ -34,22 +34,19 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 
 	} else {
 		// Register the client by adding to the clients map
+		// Determine if the user is joining an existing room or creating a new room
 		if _, ok := clients[client.RoomID]; ok {
-			log.Println("Room already exists. Client is joining room")
+			// Joining room
 			clients[client.RoomID].ConnectedClients[client.ClientID] = ws
 		} else {
-			log.Println("Room does not exist. Client is creating new room")
+			// Creating room
 			room := new(Room)
 			room.RoomID = client.RoomID
 			room.RoomName = client.RoomName
 			room.ConnectedClients = make(map[string]*websocket.Conn)
 			room.ConnectedClients[client.ClientID] = ws
-
 			clients[room.RoomID] = room
 		}
-
-		// log.Printf("CLIENTS: %v", clients[room.RoomID])
-
 	}
 
 	// Close the websocket connection when the function returns
