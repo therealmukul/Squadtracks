@@ -34,13 +34,21 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 
 	} else {
 		// Register the client by adding to the clients map
-		room := new(Room)
-		room.RoomID = client.RoomID
-		room.RoomName = client.RoomName
-		room.ConnectedClients = make(map[string]*websocket.Conn)
-		room.ConnectedClients[client.ClientID] = ws
+		if _, ok := clients[client.RoomID]; ok {
+			log.Println("Room already exists. Client is joining room")
+			clients[client.RoomID].ConnectedClients[client.ClientID] = ws
+		} else {
+			log.Println("Room does not exist. Client is creating new room")
+			room := new(Room)
+			room.RoomID = client.RoomID
+			room.RoomName = client.RoomName
+			room.ConnectedClients = make(map[string]*websocket.Conn)
+			room.ConnectedClients[client.ClientID] = ws
 
-		clients[room.RoomID] = room
+			clients[room.RoomID] = room
+		}
+
+		// log.Printf("CLIENTS: %v", clients[room.RoomID])
 
 	}
 
@@ -62,12 +70,19 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func userJoinedRoom(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	w.WriteHeader(http.StatusOK)
+	log.Println(vars["roomID"])
+}
+
 func handleMessages() {
 	for {
 		// Get the next message in the broadcast channel
 		msg := <-broadcast
 		// Send the message out to every connected client
 		for clientID, client := range clients[msg.RoomID].ConnectedClients {
+			// log.Println(clientID)
 			err := client.WriteJSON(msg)
 			if err != nil {
 				log.Printf("ERROR: %v", err)
@@ -99,7 +114,6 @@ func generateUuid(w http.ResponseWriter, r *http.Request) {
 	 	w.Write(js)
 	} else {
 		successRes := UUIDResponse{"OK", roomUID, clientUID}
-		log.Println(successRes)
 		js, err := json.Marshal(successRes)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -108,6 +122,41 @@ func generateUuid(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 	 	w.Write(js)
 	}
+}
+
+func joinRoom(w http.ResponseWriter, r *http.Request) {
+	// Get room object based on roomID
+	roomID := r.FormValue("roomID")
+	room := clients[roomID]
+	log.Println(room)
+
+	// Generate random clientUID
+	cID, errC := uuid.NewV4()
+	clientUID := cID.String()
+
+	log.Println(errC)
+
+	// Create reponse object
+	if room != nil {
+		res := JoinRoomResponse{"OK", clientUID, room.RoomName}
+		js, err := json.Marshal(res)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		   return
+		}
+		w.Header().Set("Content-Type", "application/json")
+	 	w.Write(js)
+	} else {
+		resErr := JoinRoomResponse{"Invalid Room", "ERROR", "ERROR"}
+		js, err := json.Marshal(resErr)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		   return
+		}
+		w.Header().Set("Content-Type", "application/json")
+	 	w.Write(js)
+	}
+
 }
 
 func main() {
@@ -119,7 +168,9 @@ func main() {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/ws", handleConnections)
-	r.HandleFunc("/api/genuuid", generateUuid)
+	r.HandleFunc("/ws/{roomID}", userJoinedRoom)
+	r.HandleFunc("/api/genuuid", generateUuid).Methods("GET")
+	r.HandleFunc("/api/join", joinRoom).Methods("POST")
 	r.PathPrefix("/").Handler(fs)
 	http.Handle("/", r)
 
