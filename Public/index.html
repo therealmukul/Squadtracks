@@ -40,17 +40,16 @@
                            <div class="center row">
                               <div class="col s12">
                                  <div class="row" id="topbarsearch">
-                                    <div class="input-field col s6 s12 red-text">
-                                       <i class="red-text material-icons prefix">search</i>
-                                       <input type="text" class="red-text" placeholder="search" ng-model="searchQuery" ng-keypress="search($event)"/>
-
+                                    <div class="input-field col s6 s12 red-text searchBarDiv">
+                                       <input type="text" class="grey-text searchBar grey lighten-4" placeholder="search" ng-model="searchQuery" ng-keypress="search($event)"/>
                                     </div>
                                  </div>
                               </div>
                            </div>
                         </li>
-                        <li><a href="#" class="red-text">About</a></li>
+                        <li><a href="#" class="red-text aboutButton">About</a></li>
                         <li><a href="#" class="red-text" ng-if="joined" ng-click="openModal()">Create Invite</a></li>
+                        <li><a href="#" class="red-text" ng-if="joined" ng-click="openAudioSettingsModal()">Audio Settings</a></li>
                      </ul>
                   </div>
                </div>
@@ -84,10 +83,29 @@
                               <a class="btn btn-floating btn-large grey darken-4" ng-click="addSearchedSong(item)" style="float: right;"><i class="material-icons">add</i></a>
                            </div>
                         </div>
-                        <!-- <span class="songTitle" class="flow-text">{{ item.snippet.title }}</span> -->
 
                      </li>
                   </ul>
+                  <div class="modal-footer">
+                     <a href="#!" class="modal-action modal-close waves-effect waves-green btn-flat">Close</a>
+                  </div>
+               </div>
+            </div>
+
+            <!-- Audio Settings Modal -->
+            <div class="modal" id="modal3">
+               <div class="modal-content">
+                  <h3>Audio Settings</h3>
+
+               
+                  <div class="row">
+                     <a class="waves-effect waves-light btn red" ng-click="audioSettings(0)">Use my speaker</a>
+                  </div>
+                  <div class="row">
+                     <a class="waves-effect waves-light btn red" ng-click="audioSettings(1)">Everyone can use their speakers</a>
+                  </div>
+
+
                   <div class="modal-footer">
                      <a href="#!" class="modal-action modal-close waves-effect waves-green btn-flat">Close</a>
                   </div>
@@ -109,10 +127,11 @@
 
 
 
-         <div class="container mainContent" id="songQueue">
-            <div ng-if="joined">
+
+         <div class="container mainContent" ng-if="joined" id="songQueue">
+            <div>
                <!-- Song Queue -->
-               <table class="highlight">
+               <table class="highlight scroll">
                   <thead>
                      <tr>
                         <th data-field="Song Title">Song Title</th>
@@ -127,20 +146,15 @@
                      </tr>
                   </tbody>
                </table>
-
-               <div class="row">
-                  <div class="col s12">
-                     <div class="input-field">
-                        <input type="text", ng-model="songUrl" ng-keypress="addSongToQueue($event)" placeholder="youtube video url" />
-                     </div>
-                  </div>
-               </div>
-
             </div>
          </div>
 
 
-         <div class="container">
+
+
+
+
+         <div class="container createRoom">
             <!-- Login -->
             <div class="row" ng-show="joined == false">
                <div class="col s4"></div>

@@ -13,6 +13,7 @@ app.controller('MainCtl', ['$scope', '$http', '$state', function($scope, $http, 
    $scope.roomMembers = [];
    $scope.searchQuery = null;
    $scope.searchQueryResults = null;
+   $scope.audioSpeakerUser = 'ALL';
 
 
    // Player Attributes
@@ -112,14 +113,8 @@ app.controller('MainCtl', ['$scope', '$http', '$state', function($scope, $http, 
                Materialize.toast(msg, 2000, 'rounded');
 
                // Send room info (current users & song queue) to sync data
-
                sendActionInfo($scope.roomID, null, null, $scope.username, "dataSync", $scope.roomMembers, $scope.songQueue);
 
-               // var actionInfo = {roomID: $scope.roomID, videoID: null, user: $scope.username, action: 'dataSync', data: $scope.roomMembers, songQueue: $scope.songQueue};
-               // conn.send(JSON.stringify(actionInfo));
-
-               // var actionInfo = {roomID: $scope.roomID, videoID: null, user: $scope.username, action: 'dataSyncQ', data: $scope.songQueue.queue, songQueue: null};
-               // conn.send(JSON.stringify(actionInfo));
             }
 
          // Sync room members and song queue data
@@ -136,6 +131,15 @@ app.controller('MainCtl', ['$scope', '$http', '$state', function($scope, $http, 
                console.log($scope.songQueue);
             }
 
+         } else if (actionInfo.action === 'singleAudioOutput') {
+            if ($scope.username != actionInfo.user) {
+               var scope = angular.element($('#player')).scope();
+               scope.player.mute()
+               $scope.audioSpeakerUser = actionInfo.user;
+            }
+
+         } else if (actionInfo.action === 'multiAudioOutput') {
+            $scope.audioSpeakerUser = 'ALL';
          }
 
       });
@@ -144,6 +148,10 @@ app.controller('MainCtl', ['$scope', '$http', '$state', function($scope, $http, 
    $scope.openModal = function() {
       console.log("open modal");
       $('#modal1').modal('open');
+   }
+
+   $scope.openAudioSettingsModal = function() {
+      $('#modal3').modal('open')
    }
 
    $scope.createRoom = function() {
@@ -210,7 +218,6 @@ app.controller('MainCtl', ['$scope', '$http', '$state', function($scope, $http, 
       });
    }
 
-
    $scope.addSongToQueue = function(keyEvent) {
       if (keyEvent.which == 13) {
          if (this.songUrl != '') {
@@ -233,23 +240,11 @@ app.controller('MainCtl', ['$scope', '$http', '$state', function($scope, $http, 
       }
    }
 
-   function sendActionInfo(_roomID, _videoID, _videoTitle, _username, _action, _data, _songQueue) {
-      var actionInfo = {
-         roomID: _roomID,
-         videoID: _videoID,
-         videoTitle: _videoTitle,
-         user: _username,
-         action: _action,
-         data: _data,
-         songQueue: _songQueue
-      }
-      conn.send(JSON.stringify(actionInfo));
-   }
-
    $scope.pause = function() {
       console.log("Pause Video");
       var scope = angular.element($('#player')).scope();
       scope.player.pauseVideo();
+
       var ctlInfo = {roomID: this.roomID, videoID: null, user: this.username, action: "pause", data: null, songQueue: null};
       conn.send(JSON.stringify(ctlInfo));
    }
@@ -258,6 +253,7 @@ app.controller('MainCtl', ['$scope', '$http', '$state', function($scope, $http, 
       console.log("Play Video");
       var scope = angular.element($('#player')).scope();
       scope.player.playVideo();
+
       var ctlInfo = {roomID: this.roomID, videoID: null, user: this.username, action: "play", data: null, songQueue: null};
       conn.send(JSON.stringify(ctlInfo));
    }
@@ -266,10 +262,17 @@ app.controller('MainCtl', ['$scope', '$http', '$state', function($scope, $http, 
       console.log("Next Video");
       var ctlInfo = {roomID: this.roomID, videoID: null, user: this.username, action: "next", data: null, songQueue: null};
       conn.send(JSON.stringify(ctlInfo));
-      var scope = angular.element($('#player')).scope();
-      scope.playNextSong();
+      this.playNextSong();
 
    }
+
+   $scope.$on('youtube.player.ready', function($event, player) {
+      console.log('player loaded');
+      console.log($scope.audioSpeakerUser, $scope.username);
+      if (($scope.audioSpeakerUser != 'ALL') && ($scope.audioSpeakerUser != $scope.username)) {
+         player.mute();
+      }
+   });
 
    $scope.playNextSong = function() {
       if (this.songQueue.queue.length > 1) {
@@ -280,6 +283,16 @@ app.controller('MainCtl', ['$scope', '$http', '$state', function($scope, $http, 
          }
          this.songQueue.currentSongID = this.songQueue.queue[this.songQueue.currentSongQueueIndex].videoID;
       }
+      // var scope = angular.element($('#player')).scope();
+      // console.log(this.audioSpeakerUser);
+      // console.log(this.username);
+      // if (this.audioSpeakerUser != this.username) {
+      //    console.log(scope.player.isMuted());
+      //    if (!scope.player.isMuted()) {
+      //       console.log("Muted player");
+      //       scope.player.mute()
+      //    }
+      // }
    }
 
    $scope.search = function(keyEvent) {
@@ -303,6 +316,32 @@ app.controller('MainCtl', ['$scope', '$http', '$state', function($scope, $http, 
       sendActionInfo(this.roomID, videoID, title, this.username, "addSong", null, null);
       this.searchQuery = '';
       $('#modal2').modal('close');
+   }
+
+   $scope.audioSettings = function(option) {
+      if (option === 0) {
+         console.log("Use my speakers");
+         sendActionInfo(this.roomID, null, null, this.username, "singleAudioOutput", null, null);
+      } else {
+         console.log("Everyone can use their speakers");
+         sendActionInfo(this.roomID, null, null, this.username, "multiAudioOutput", null, null);
+      }
+
+      $('#modal3').modal('close')
+   }
+
+   // ------------------ Utility Function ------------------
+   function sendActionInfo(_roomID, _videoID, _videoTitle, _username, _action, _data, _songQueue) {
+      var actionInfo = {
+         roomID: _roomID,
+         videoID: _videoID,
+         videoTitle: _videoTitle,
+         user: _username,
+         action: _action,
+         data: _data,
+         songQueue: _songQueue
+      }
+      conn.send(JSON.stringify(actionInfo));
    }
 
 }]);

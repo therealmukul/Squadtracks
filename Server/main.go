@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"sync"
 	"net/http"
 	"encoding/json"
 	"github.com/gorilla/websocket"
@@ -12,6 +13,7 @@ import (
 var clients = make(map[string]*Room)
 var broadcast = make(chan Action)                // broadcast channel
 var upgrader = websocket.Upgrader{}              // upgrades HTTP reqs to websocket connections
+var lock = sync.RWMutex{}
 
 type Room struct {
 	RoomID					string
@@ -35,6 +37,7 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 	} else {
 		// Register the client by adding to the clients map
 		// Determine if the user is joining an existing room or creating a new room
+		lock.Lock()
 		if _, ok := clients[client.RoomID]; ok {
 			// Joining room
 			clients[client.RoomID].ConnectedClients[client.ClientID] = ws
@@ -47,6 +50,7 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 			room.ConnectedClients[client.ClientID] = ws
 			clients[room.RoomID] = room
 		}
+		lock.Unlock()
 	}
 
 	// Close the websocket connection when the function returns
@@ -78,6 +82,7 @@ func handleMessages() {
 		// Get the next message in the broadcast channel
 		msg := <-broadcast
 		// Send the message out to every connected client
+		lock.Lock()
 		for clientID, client := range clients[msg.RoomID].ConnectedClients {
 			// log.Println(clientID)
 			err := client.WriteJSON(msg)
@@ -87,6 +92,7 @@ func handleMessages() {
 				delete(clients[msg.RoomID].ConnectedClients, clientID)
 			}
 		}
+		lock.Unlock()
 	}
 }
 

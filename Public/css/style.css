@@ -8,8 +8,12 @@ main {
   flex: 1 0 auto;
 }
 
-
 .mainContent {
+   
+}
+
+
+.createRoom {
    margin-top: 100px;
 }
 
@@ -40,4 +44,18 @@ main {
 
 .songTitle {
    margin-right: 20px;
+}
+
+.searchBarDiv {
+   width: 400px !important;
+   height: 45px;
+}
+
+.searchBar {
+   padding-left: 20px !important;
+   height: 45px !important;
+}
+
+.aboutButton {
+   margin-left: 24px !important;
 }
