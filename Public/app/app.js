@@ -14,6 +14,7 @@ app.controller('MainCtl', ['$scope', '$http', '$state', function($scope, $http, 
    $scope.searchQuery = null;
    $scope.searchQueryResults = null;
    $scope.audioSpeakerUser = 'ALL';
+   $scope.songThumbnails = [];
 
 
    // Player Attributes
@@ -39,6 +40,19 @@ app.controller('MainCtl', ['$scope', '$http', '$state', function($scope, $http, 
       }
    }
 
+   // Player ready event listener
+   $scope.$on('youtube.player.ready', function($event, player) {
+      console.log('player loaded');
+      console.log($scope.audioSpeakerUser, $scope.username);
+      if (($scope.audioSpeakerUser != 'ALL') && ($scope.audioSpeakerUser != $scope.username)) {
+         player.mute();
+      }
+   });
+
+   window.onbeforeunload = function () {
+      return "";
+   };
+
    // Establish a websocket connection
    var conn = new WebSocket("ws://" + window.location.host + "/ws");
 
@@ -46,6 +60,7 @@ app.controller('MainCtl', ['$scope', '$http', '$state', function($scope, $http, 
    conn.onclose = function(e) {
       $scope.$apply(function() {
          console.log("WS Connection Closed");
+         console.log($scope.username, $scope.clientID);
       });
    }
 
@@ -125,10 +140,8 @@ app.controller('MainCtl', ['$scope', '$http', '$state', function($scope, $http, 
             console.log(actionInfo.songQueue);
 
             if ($scope.username != actionInfo.user) {
-               console.log($scope.songQueue);
                $scope.roomMembers = actionInfo.data;
                $scope.songQueue = actionInfo.songQueue;
-               console.log($scope.songQueue);
             }
 
          } else if (actionInfo.action === 'singleAudioOutput') {
@@ -172,17 +185,11 @@ app.controller('MainCtl', ['$scope', '$http', '$state', function($scope, $http, 
          $scope.username = $('<p>').html($scope.username).text();
          $scope.joined = true;
          $scope.inviteLink = window.location.host + "/ws" + $scope.roomID
-         console.log($scope.inviteLink);
 
          var data = {roomID: $scope.roomID, clientID: $scope.clientID, roomName: $scope.roomName, connection: conn}
-         console.log(data);
          conn.send(JSON.stringify(data));
 
          sendActionInfo($scope.roomID, null, null, $scope.username, "joined", null, null);
-
-         // var actionInfo = {roomID: $scope.roomID, videoID: null, user: $scope.username, action: 'joined', data: null, songQueue: null};
-         // console.log(actionInfo);
-         // conn.send(JSON.stringify(actionInfo));
       });
 
    }
@@ -207,14 +214,9 @@ app.controller('MainCtl', ['$scope', '$http', '$state', function($scope, $http, 
          $scope.joined = true;
 
          var data = {roomID: $scope.roomID, clientID: $scope.clientID, roomName: $scope.roomName, connection: conn}
-         console.log(data);
          conn.send(JSON.stringify(data));
 
          sendActionInfo($scope.roomID, null, null, $scope.username, "joined", null, null);
-
-         // var actionInfo = {roomID: $scope.roomID, videoID: null, user: $scope.username, action: 'joined', data: null, songQueue: null};
-         // console.log(actionInfo);
-         // conn.send(JSON.stringify(actionInfo));
       });
    }
 
@@ -231,7 +233,6 @@ app.controller('MainCtl', ['$scope', '$http', '$state', function($scope, $http, 
             url = "https://www.googleapis.com/youtube/v3/videos?id="+videoID+"&key="+YTAPIKEY+"&part=snippet"
             $http.get(url).then(function(res) {
                var title = res.data.items[0].snippet.title;
-               console.log(title);
                sendActionInfo($scope.roomID, videoID, title, $scope.username, "addSong", null, null);
             });
 
@@ -241,38 +242,27 @@ app.controller('MainCtl', ['$scope', '$http', '$state', function($scope, $http, 
    }
 
    $scope.pause = function() {
-      console.log("Pause Video");
       var scope = angular.element($('#player')).scope();
       scope.player.pauseVideo();
-
       var ctlInfo = {roomID: this.roomID, videoID: null, user: this.username, action: "pause", data: null, songQueue: null};
       conn.send(JSON.stringify(ctlInfo));
    }
 
    $scope.play = function() {
-      console.log("Play Video");
       var scope = angular.element($('#player')).scope();
       scope.player.playVideo();
-
       var ctlInfo = {roomID: this.roomID, videoID: null, user: this.username, action: "play", data: null, songQueue: null};
       conn.send(JSON.stringify(ctlInfo));
    }
 
    $scope.next = function() {
-      console.log("Next Video");
       var ctlInfo = {roomID: this.roomID, videoID: null, user: this.username, action: "next", data: null, songQueue: null};
       conn.send(JSON.stringify(ctlInfo));
       this.playNextSong();
 
    }
 
-   $scope.$on('youtube.player.ready', function($event, player) {
-      console.log('player loaded');
-      console.log($scope.audioSpeakerUser, $scope.username);
-      if (($scope.audioSpeakerUser != 'ALL') && ($scope.audioSpeakerUser != $scope.username)) {
-         player.mute();
-      }
-   });
+
 
    $scope.playNextSong = function() {
       if (this.songQueue.queue.length > 1) {
@@ -283,23 +273,11 @@ app.controller('MainCtl', ['$scope', '$http', '$state', function($scope, $http, 
          }
          this.songQueue.currentSongID = this.songQueue.queue[this.songQueue.currentSongQueueIndex].videoID;
       }
-      // var scope = angular.element($('#player')).scope();
-      // console.log(this.audioSpeakerUser);
-      // console.log(this.username);
-      // if (this.audioSpeakerUser != this.username) {
-      //    console.log(scope.player.isMuted());
-      //    if (!scope.player.isMuted()) {
-      //       console.log("Muted player");
-      //       scope.player.mute()
-      //    }
-      // }
    }
 
    $scope.search = function(keyEvent) {
       if (keyEvent.which == 13) {
          var query = encodeURIComponent(this.searchQuery);
-         console.log(query);
-
          url = "https://www.googleapis.com/youtube/v3/search?part=snippet&q="+query+"&key="+YTAPIKEY;
          $http.get(url).then(function(res) {
             console.log(res.data);
@@ -310,9 +288,9 @@ app.controller('MainCtl', ['$scope', '$http', '$state', function($scope, $http, 
    }
 
    $scope.addSearchedSong = function(songInfo) {
-      console.log(songInfo);
       var videoID = songInfo.id.videoId;
       var title = songInfo.snippet.title;
+      this.songThumbnails.push(songInfo.snippet.thumbnails.default.url)
       sendActionInfo(this.roomID, videoID, title, this.username, "addSong", null, null);
       this.searchQuery = '';
       $('#modal2').modal('close');
@@ -320,10 +298,8 @@ app.controller('MainCtl', ['$scope', '$http', '$state', function($scope, $http, 
 
    $scope.audioSettings = function(option) {
       if (option === 0) {
-         console.log("Use my speakers");
          sendActionInfo(this.roomID, null, null, this.username, "singleAudioOutput", null, null);
       } else {
-         console.log("Everyone can use their speakers");
          sendActionInfo(this.roomID, null, null, this.username, "multiAudioOutput", null, null);
       }
 
