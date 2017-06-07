@@ -5,4 +5,5 @@ $(document).ready(function(){
    $('.modal').modal();
    $(".button-sideNav").sideNav();
    $('select').material_select();
+   $(window).on('beforeunload', function(){ alert ('Bye now')});
 });
