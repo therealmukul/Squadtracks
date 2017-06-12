@@ -71,11 +71,6 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func userJoinedRoom(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	w.WriteHeader(http.StatusOK)
-	log.Println(vars["roomID"])
-}
 
 func handleMessages() {
 	for {
@@ -162,6 +157,25 @@ func joinRoom(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func removeUser(w http.ResponseWriter, r *http.Request) {
+	// Get room object based on roomID
+	roomID := r.FormValue("roomID")
+	clientID := r.FormValue("clientID")
+
+	// TODO: Add some error checking to make sure the map contains the object that is trying
+	// to be deleted. Delete() doesn't return anything.
+	delete(clients[roomID].ConnectedClients, clientID)
+	resErr := JoinRoomResponse{"Delete Ok", "ERROR", "ERROR"}
+	js, err := json.Marshal(resErr)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(js)
+
+}
+
 func main() {
 
 	// Create a file server
@@ -171,9 +185,9 @@ func main() {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/ws", handleConnections)
-	r.HandleFunc("/ws/{roomID}", userJoinedRoom)
 	r.HandleFunc("/api/genuuid", generateUuid).Methods("GET")
 	r.HandleFunc("/api/join", joinRoom).Methods("POST")
+	r.HandleFunc("/api/remove", removeUser).Methods("POST")
 	r.PathPrefix("/").Handler(fs)
 	http.Handle("/", r)
 
